@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
 
-project(test
-  DESCRIPTION "Test SQB"
+project(example
+  DESCRIPTION "Example SQB"
   LANGUAGES C CXX
 )
 
@@ -25,6 +25,9 @@ AddLibrarayToProject("squirrel")
 
 add_subdirectory(sqb)
 
-add_executable(${PROJECT_NAME} test.cpp ut/check.h)
+add_executable(test test.cpp ut/check.h)
+target_link_libraries(test sqb)
 
-target_link_libraries(${PROJECT_NAME} sqb)
+add_executable(demo demo.cpp)
+target_link_libraries(demo sqb)
+
