@@ -5,12 +5,14 @@ my.i = 100
 i88 <- my.func(44)
 stest5 <- f_str_int("test",5)
 
-Test.staticMethod(12)
-TestStatic.static_prop = 567
-
 local c = Test("Hello")
 smulti1 <- c.multi(7)
 smulti2 <- c.multi(8,"data")
+
+
+Test.staticMethod(12)
+TestStatic.static_prop = 567
+
 
 local test = Test(44)
 test << 6

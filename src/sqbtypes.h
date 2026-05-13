@@ -27,11 +27,11 @@ class Type {
 public:
   SQObjectType        type;
   std::vector<size_t> hashes;
+  std::string         name;
 
   Type() = delete;
   Type(const Type&) = delete;
   Type& operator=(const Type&) = delete;
-
 
   static const Type& get(size_t type_hash)
   {
@@ -44,8 +44,15 @@ public:
     return t;
   }
 
+  template<typename T>
+  static const Type& get()
+  {
+    size_t type_hash = typeid(T).hash_code();
+    return get(type_hash);
+  }
+
   template<typename T, typename... Bases>
-  static const Type& create(SQObjectType type = OT_OUTER)
+  static const Type& create(SQObjectType type = OT_OUTER, const std::string &type_name = "")
   {
     auto&  type_map  = get_type_map();
     size_t type_hash = typeid(T).hash_code();
@@ -66,6 +73,7 @@ public:
     }
 
     Type &t = it->second;
+    t.name = type_name;
 
     if (sizeof...(Bases) > 0) {
       // (..., hashes.push_back(typeid(Bases).hash_code())); // C++17

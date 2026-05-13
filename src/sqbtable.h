@@ -89,15 +89,10 @@ public:
     sq_pushstring(vm, name.c_str(), -1);
     types::push<T>(vm, value);
 
-    //detail::debugStackShow(vm);
-
     sq_newslot(vm, -3, SQFalse);
 
-    //detail::debugStackShow(vm);
+    pop(); //sq_pop(vm,top);
 
-
-    pop();
-    //sq_pop(vm,top);
     return *this;
   }
 
@@ -229,22 +224,27 @@ public:
   }
 
 
-  template <typename T>
-  SQBClass<T> bindClass(const std::string &name) {
-    SQBClass<T> *baseClass = nullptr;
-    return SQBClass<T>(*this, name, baseClass);
+  template <typename A>
+  SQBClass<A> bindClass(const std::string &name) {
+    return SQBClass<A>(*this, name);
   }
 
-  template <typename T, typename B>
-  SQBClass<T> bindClass(const std::string &name, const SQBClass<B> &baseClass) {
-    return SQBClass<T>(*this, name, &baseClass);
+  template <typename A, typename B>
+  SQBClass<A, B> bindClass(const std::string &name) {
+    return SQBClass<A, B>(*this, name);
   }
 
-  template <typename T, typename B>
-  SQBClass<T> bindClass(const std::string &name, const std::string& baseClassName) {
-    SQBClass<B> baseClass(vm, find(baseClassName));
-    return SQBClass<T>(*this, name, &baseClass);
+  template <typename A, template<typename> class S>
+  SQBClass<A> bindClass(const std::string &name, Smart<S> strategy) {
+    return SQBClass<A>(*this, name, Smart<S>::template prepare<A>());
   }
+
+  template <typename A, typename B, template<typename> class S>
+  SQBClass<A, B> bindClass(const std::string &name, Smart<S> strategy) {
+    return SQBClass<A, B>(*this, name, Smart<S>::template prepare<A, B>());
+  }
+
+
 
   SQBFunction getFunction(const std::string &name)
   {

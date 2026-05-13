@@ -72,7 +72,7 @@ public:
 
   HSQUIRRELVM getVM() const;
 
-  HSQOBJECT find(const std::string name);
+  HSQOBJECT find(const std::string name) const;
 
   // push to stack this object hsqObject (table, func, etc)
   virtual int push() const;

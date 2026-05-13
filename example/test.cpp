@@ -61,7 +61,7 @@ struct Test {
   }
 
   static std::string staicMethod(int x) {
-    static std::string data = "static";
+    static std::string data = "static"; // append x to data
     data += " " + std::to_string(x);
     return data;
   }
@@ -212,8 +212,7 @@ int main(int argc, char **argv)
         .bindValue("static_prop", &Test::static_prop)
         ;
 
-    sqb.bindClass<Test>("TestP")
-        .smartSharedPtr()
+    sqb.bindClass<Test>("TestP", sqb::Smart<std::shared_ptr>())
         .bindConstructor()
         .bindConstructor<int>()
         .bindConstructor<std::string, int>()
@@ -275,7 +274,7 @@ int main(int argc, char **argv)
     sqb.bindClass<Base>("Base")
         .bindMethod("baseMethod", &Base::baseMethod);
 
-    sqb.bindClass<Custom, Base>("Custom", "Base")
+    sqb.bindClass<Custom, Base>("Custom")
         .bindMethod("myMethod", &Custom::myMethod);
 
     sqb.executeString(R"(custom <- Custom();)");

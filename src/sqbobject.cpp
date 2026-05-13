@@ -113,7 +113,7 @@ HSQUIRRELVM SQBObject::getVM() const
   return vm;
 }
 
-HSQOBJECT SQBObject::find(const std::string name)
+HSQOBJECT SQBObject::find(const std::string name) const
 {
   if (name.empty())
     return {OT_NULL, nullptr}; // null object

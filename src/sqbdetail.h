@@ -115,6 +115,36 @@ inline typename function_traits<L>::f_type make_function(L l){
 }
 
 
+
+
+typedef void* (*ExtractFunc)(void*);
+
+
+struct MethodDescriptor {
+  ExtractFunc thisExtractor;
+  size_t      thisTypetagOriginal;
+  size_t      thisTypetagTarget;
+  bool        isStatic;
+
+  MethodDescriptor(ExtractFunc ex = nullptr,
+                  size_t original = 0,
+                  size_t target = 0,
+                  bool stat = false)
+      : thisExtractor(ex),
+        thisTypetagOriginal(original),
+        thisTypetagTarget(target),
+        isStatic(stat)
+  {}
+
+  bool isMethod() const
+  {
+    return thisExtractor && !isStatic;
+  }
+};
+
+
+
+
 ////////////////////////////////////////////////////////////////////////
 /// Signature
 struct  Signature {
@@ -188,7 +218,7 @@ struct  Signature {
 
   //explicit Signature(HSQUIRRELVM vm, bool isMethod = false)
   //    : return_hash(typeid(void).hash_code())
-  void get(HSQUIRRELVM vm, bool isMethod = false)
+  void get(HSQUIRRELVM vm, const MethodDescriptor &md)
   {
     return_hash = typeid(void).hash_code();
     arg_hashes.clear();
@@ -196,7 +226,7 @@ struct  Signature {
     std::string sig;
     SQInteger numArgs = sq_gettop(vm);
 
-    int skip = isMethod?1:2;
+    int skip = md.isMethod()?1:2;
     number_required_arguments = numArgs - skip;
 
     for (SQInteger i = skip; i < numArgs; ++i) {
@@ -206,6 +236,11 @@ struct  Signature {
       sq_gettypetag(vm, i, &typetagP);
       size_t typetag = reinterpret_cast<size_t>(typetagP);
       typetag = getHash(type, typetag);
+
+      if (i == skip) { // thange type this
+        if (md.isMethod() && md.thisTypetagTarget != 0) // && typetag == md.thisTypetagOriginal
+          typetag = md.thisTypetagTarget;
+      }
 
       arg_hashes.push_back(typetag);
     }
@@ -308,9 +343,6 @@ private:
 
 
 
-typedef void* (*ExtractFunc)(void*);
-
-
 template<typename T>
 struct ArgExtractor {
   static T extract(HSQUIRRELVM vm, int idx, ExtractFunc) {
@@ -379,10 +411,10 @@ struct ArgumentUnpacker<T, Rest...>
     typedef typename std::remove_reference<T>::type BaseType;
     BaseType arg = detail::ArgExtractor<T>::extract(vm, argIndex + argShift, ext);
 
-    return ArgumentUnpacker<Rest...>::call(vm, 
+    return ArgumentUnpacker<Rest...>::call(vm,
       [&func, &arg](Rest... rest) -> decltype(func(arg, rest...)) {
         return func(arg, rest...);
-      }, 
+      },
       argsCount, ext);
   }
 };
@@ -438,15 +470,13 @@ using Function = std::function<SQInteger(HSQUIRRELVM)>;
 
 // structure referenced by squirrel when calling the function, it contains all overloaded functions
 struct FunctionVariant {
-  ExtractFunc extractor;
+  const MethodDescriptor methodDescriptor;
 
   std::vector<std::pair<Signature, Function>> functions;
 
-  FunctionVariant(ExtractFunc ext = nullptr)
-      : extractor(ext)
+  FunctionVariant(const MethodDescriptor &md = {})
+      : methodDescriptor(md)
   {}
-
-  bool isMethod() const { return extractor != nullptr; }
 
   template <typename Ret, typename... Args>
   void append(const std::string& name, const std::function<Ret(Args...)> &func)
@@ -458,7 +488,7 @@ struct FunctionVariant {
         throw std::runtime_error("Overload already exists: " + name); // TODO Signature create serialization + " " + signature);
     }
 
-    auto ex = extractor;
+    auto ex = methodDescriptor.thisExtractor;
 
     functions.push_back(std::make_pair(
       std::move(signature),
@@ -554,12 +584,9 @@ inline std::string getCurrentFunctionSignature(HSQUIRRELVM vm, bool isMethod = f
 
 
 template <typename Ret, typename... Args>
-void registerFunction(SQBObject *obj, const std::string& name, const std::function<Ret(Args...)> func, ExtractFunc extractor = nullptr, bool isStatic=false)
+void registerFunction(SQBObject *obj, const std::string& name, const std::function<Ret(Args...)> func, const MethodDescriptor &md = {})
 {
   HSQUIRRELVM vm = obj->getVM();
-
-  if (isStatic)
-    extractor = nullptr;
 
   if (vm == nullptr)
     throw std::runtime_error("squirrel vm not set");
@@ -571,7 +598,7 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
 
     sq_pushstring(vm, name.c_str(), name.size());
 
-    fv = new FunctionVariant(extractor);
+    fv = new FunctionVariant(md);
     types::pushValue(vm, fv);
     sq_setreleasehook(vm, -1, &types::release_hook_delete<FunctionVariant>);
 
@@ -581,11 +608,11 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
           FunctionVariant *fv = types::popValue<FunctionVariant*>(vm, -1);
 
           Signature signature;
-          signature.get(vm, fv->isMethod());
+          signature.get(vm, fv->methodDescriptor);
 
           Function *f = fv->getCompatibleFunction(signature);
           if (f==nullptr) {
-            throw std::runtime_error(getCurrentFunctionSignature(vm, fv->isMethod()) + " signature not found"); // TODO + signature);
+            throw std::runtime_error(getCurrentFunctionSignature(vm, fv->methodDescriptor.isMethod()) + " signature not found"); // TODO + signature);
           }
 
           return (*f)(vm);
@@ -595,7 +622,7 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
 
     SQObjectType type = sq_gettype(vm, -3);
     assert(type == OT_TABLE || type == OT_CLASS);
-    if (SQ_FAILED(sq_newslot(vm, -3, isStatic))) { // SQFalse as Instance , SQTrue as Class (static)
+    if (SQ_FAILED(sq_newslot(vm, -3, md.isStatic))) { // SQFalse as Instance , SQTrue as Class (static)
       throw std::runtime_error("failed bind function " + name);
     }
 
@@ -607,17 +634,17 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
 
 
 template <typename Ret, typename... Args>
-static void registerFunction(SQBObject *obj, const std::string& name, Ret(*funcptr)(Args...), ExtractFunc extractor = nullptr, bool isStatic=false)
+static void registerFunction(SQBObject *obj, const std::string& name, Ret(*funcptr)(Args...), const MethodDescriptor &md = {})
 {
   auto func = std::function<Ret(Args...)>(funcptr);
-  registerFunction(obj, name, func, extractor, isStatic);
+  registerFunction(obj, name, func, md);
 }
 
 
 template <typename Func>
-static void registerFunction(SQBObject *obj, const std::string& name, const Func &lambda, ExtractFunc extractor = nullptr, bool isStatic=false)
+static void registerFunction(SQBObject *obj, const std::string& name, const Func &lambda, const MethodDescriptor &md = {})
 {
-  registerFunction(obj, name, detail::make_function(lambda), extractor, isStatic);
+  registerFunction(obj, name, detail::make_function(lambda), md);
 }
 
 }}
