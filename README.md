@@ -1,6 +1,8 @@
 # SQBinding
 
-C++11 binding to the scripting language [Squirrel](http://www.squirrel-lang.org/). Without any external dependencies except Squirrel itself.
+Binding to the scripting language [Squirrel](http://www.squirrel-lang.org/).
+
+Pure C++11, no macros, no external dependencies — only STL and Squirrel.
 
 This code was written as part of another major project. I thought some parts might be useful to other people.
 I wanted to unify the C++ API and the API for writing scripts as much as possible. To make the same code in C++ and Squirrel look almost the same.
@@ -11,17 +13,20 @@ At first, I used Lua. Objectively speaking, it's a great thing. But the syntax w
 
 The problem was that, once again, ready-made bindings did not provide what was needed.
 
-**What can SQBinding do**
+**What SQBinding can do**
 
-- Small size
-- Easy embedding
-- The simplest possible binding of everything
-- Overloading of functions and methods
-- Native support for smart pointers
-- Search and call script objects
-- Adding any custom types
-- Transparent bidirectional transmission of any type
-- Operators (I had to patch Squirrel here)
+- Multiple independent VMs: `sqb::SQBinding vm1, vm2, vm3;`
+- Bind free functions, lambdas, and methods
+- Overloaded functions, methods, and static methods via `sqb::sig<Ret, Args...>()`
+- Fluent interface for class binding: `.bindConstructor().bindMethod().bindProp()`
+- Native any smart pointer support via `sqb::Smart<T>()`
+- Inheritance — base class methods available in derived classes, `instanceof` works
+- Bind C++ operators to Squirrel metamethods (`_shiftl`, `_or`)
+- Bidirectional value binding — bind C++ variables to script and modify from both sides
+- Tables and arrays with STL-compatible access
+- Call Squirrel functions from C++ and pass/return any bound type
+- Custom types via `popValue`/`pushValue` specialization
+- Execute scripts from strings or files
 
 ## What it looks like in a real project
 
@@ -61,9 +66,9 @@ The difference is minimal. This is exactly what was intended.
 
 # Features
 
-## Minimal examples
+## Minimal example
 
-Here we call the Squirrel function from C++ and vice versa the C++ function from Squirrel.
+Call the Squirrel function from C++ and vice versa the C++ function from Squirrel.
 
 ```cpp
 #include "sqbinding.h"
@@ -93,8 +98,7 @@ int main(int argc, char **argv)
 }
 ```
 
-Console output is disabled by default, you should have your own output function.
-This is done specifically for the possibility of integration into your logging and output system.
+Console output is disabled by default. You must provide your own output function — this way it integrates directly into your logging system.
 
 ```cpp
 void printfunc(HSQUIRRELVM v, const SQChar *s,...)
@@ -111,9 +115,7 @@ sqb::SQBinding sqb;
 sq_setprintfunc(sqb.vm, printfunc, printfunc); // print func, error func
 ```
 
-It is almost always better to run the code inside the try catch block, since SQBinding throws exceptions in case of errors.
-In general, I recommend wrapping the entire code in a separate `{...}` block
-
+Wrap your code in a try-catch block — SQBinding throws exceptions on errors. Using a separate {...} scope is recommended.
 
 ```cpp
 
@@ -143,27 +145,23 @@ int main() {
 
 ```
 
-Important!
-
-All variables, declared types and classes will exist until `sqb` destroyed
-
-This is convenient because you can call basic functions and classes from a file, then call another file that will use the already loaded data, or call small routines from a string.
+Important: all bound variables, types, and classes exist until sqb is destroyed. This lets you load base functions and classes from one file, then execute another file that uses them, or run small scripts from strings.
 
 
 ## Binding of functions
 
-There are two ways, through a pointer and through a lambda/functor.
+Three ways: a pointer to a function, std::function, or lambda
 
 ```cpp
 
-// 1. through the pointer
+// 1. pointer to a function
 std::string func(std::string name) {
   return "Hello " + name;
 }
 
 sqb.bindFunction("func", func);
 
-// 2. functors
+// 2. std::function
 std::function<std::string(std::string)> func;
 
 func = [](std::string name) {
@@ -181,19 +179,20 @@ sqb.bindFunction("func", [](std::string name){
 
 Now you can call **func() from Squirrel.**
 
-Often, when binding, the C++ API comes across, which contains many overloaded functions. This is exactly the trouble I'm facing. SQBinding solves this simply.
+The real trouble is overloaded functions. SQBinding solves this cleanly.
 
 ```cpp
 int test(int i) { return i; }
 std::string test(std::string s) { return s; }
 
-sqb.bindFunction("test", static_cast<int(*)(int)>(test));
-sqb.bindFunction("test", static_cast<std::string(*)(std::string)>(test));
+sqb.bindFunction("test", test, sqb::sig<int,int>());
+sqb.bindFunction("test", test, sqb::sig<std::string,std::string>());
 ```
 
-Yes, `static_cast` doesn't look good, you can write a macro to simplify it or some kind of wrapper, but this will be your decision.
+No static_cast, no macros. Just sqb::sig<Ret, Args...>() to resolve the overload.
 
-The reverse situation is when there is a function in Squirrel that needs to be called from C++.
+
+The reverse — calling a Squirrel function from C++.
 
 ```lua
 function func(name) {
@@ -209,23 +208,23 @@ sqb.executeFile("script.nut");
 // or
 sqb.executeString(script);
 
-// Creating the SQBFunction object
+// creating the SQBFunction object
 auto func = sqb.getFunction("func");
 
-// calling without taking the result
+// call, ignore return value
 func("Ligverd");
 
-// we automatically collect the result
+// implicit conversion to return type
 std::string str = func("Ligverd");
 
-// explicitly taking the result by specifying the type
+// explicit return type
 std::string str = func("Ligverd").ret<std::string>(); 
 
 ```
 
 ## Working with variables
 
-There are three main mechanisms: binding, set, and get values.
+Three operations: bind, set, and get.
 
 ```cpp
 std::string name;
@@ -248,7 +247,7 @@ sqb.setValue("value", value);
 
 ## Custom types
 
-All the basic scalar types are already described, but if you need to pass some type of your own, there is an easy way to add conversion to/from Squirrel.
+Basic scalar types are built in. To pass your own type, specialize popValue and pushValue.
 
 ```cpp
 
@@ -296,33 +295,29 @@ inline void pushValue<CustomType>(HSQUIRRELVM vm, const CustomType& val) {
 }}
 ```
 
-I'll run a little ahead, if you have made a binding of the class, then you do not need to make such converters!
+If you bind a class, you don't need these converters — SQBinding handles type compatibility automatically.
 
-SQBinding can automatically do a type cast, provided that you guarantee correctness. To do this, you need to explicitly specify which types can be explicitly or implicitly converted to.
+For edge cases, you can manually declare type compatibility:
 
 
 ```cpp
 types::Type::create<ClassType,  ClassType*, BaseClassType, BaseClassType*>(OT_INSTANCE);
 ```
 
-In 99% of cases, this is not required. SQBinding itself manages type compatibility.
+This is rarely needed — for example, when a base class is not bound, but a child class is, and a function expects the base type.
 
-This may be necessary in some cases, for example, you have a base class, but you did not bind it, but only a child class was bound.
-In order for a method or function that accepts the type of the base class to work correctly, you can create a manual compatibility table (as shown above)
 
 ## Working with tables as a separate type and as a namespace
 
-Squirrel has no concept of structures, hashes, or namespaces, everything is replaced by tables.
-
-all global functions, variables and types are stored in the root table, in fact, when we declare **sqb::SQBinding sqb** we create an SQBTable object.
+Squirrel has no structs, hashes, or namespaces — everything is a table. Global functions, variables, and types live in the root table. sqb::SQBinding sqb is itself an SQBTable wrapping the root table.
 
 ```cpp
 sqb::SQBinding sqb; // <- this is the SQBTable on the Squirrel root_table
 
-// create your own table in the roottable
+// create a table in the root table
 auto my = sqb.newTable("my");
 
-// create a free table in the roottable to which to bind and/or set variables and functions
+// bind and set variables and functions on a new table
 std::string name;
 int index;
 int func(int i) {...}
@@ -351,21 +346,17 @@ my.lambda(9)
 my.subtable.name = "hello"
 ```
 
-To get a table from Squirrel in C++, on the contrary
+To get a table from Squirrel into C++:
 
 ```cpp
 sqb::SQBTable t(sqb.vm, sqb.find("my"));
 ```
 
-In fact, **find** can be called for any `SQBinding` object, it returns `HSQOBJECT`, i.e. the native Squirrel type.
-
+`find` works on any `SQBTable`, returning the native `HSQOBJECT`.
 
 ## Arrays
 
-Array is the basic Squirrel type and is represented by the SQBArray class.
-
-In most cases, it is not necessary to work with SQBArray specifically, it must be used either in pushValue/popValue converters or in rare cases of manual disassembly.
-
+Arrays are represented by `SQBArray`. You rarely need to use it directly — mainly in pushValue/popValue converters or manual unpacking.
 
 ```cpp
 // add a field in the table with the Array type
@@ -380,7 +371,7 @@ ar.append(1)
 auto ar = sqb.newTable("my").newArray("name");
 ```
 
-You can also create a separate array without bindings, i.e. it won't be on the Squirrel stack.
+You can also create a standalone array — it won't be placed on the Squirrel stack.
 
 ```cpp
 sqb::SQBArray ar(sqb.vm);
@@ -526,9 +517,9 @@ sqb.bindClass<Base>("Base")
    .bindConstructor<int, Type>()
    .bindConstructor([](std::string x){ return new Base( std::stoi(x) ); }) // <-- non-existent custom constructor
    .bindMethod("getID", &Base::getID)
-   .bindMethod("method", static_cast<std::string(Base::*)()>(&Base::method))
-   .bindMethod("method", static_cast<std::string(Base::*)(int)>(&Base::method))
-   .bindMethod("method", static_cast<std::string(Base::*)(std::string)>(&Base::method))
+   .bindMethod("method", &Base::method, sqb::sig<std::string>())
+   .bindMethod("method", &Base::method, sqb::sig<std::string, int>())
+   .bindMethod("method", &Base::method, sqb::sig<std::string, std::string>())
    .bindMethod("incID", [](Base *self){ self->id++; }) // <-- a custom method that does not exist
    .bindStaticMethod("resetAll", &Base::resetAll)
    .bindProp("id", &Base::id)
@@ -668,7 +659,7 @@ void externalFunction(MyPtr<Base> p);
 
 ## Building and running the example
 
-The repository is self-sufficient: it downloads Squirrel, builds it statically, compiles SQBinding and runs tests.
+The repository is self-contained — it downloads Squirrel, builds it statically, compiles SQBinding, and runs the tests.
 
 ```bash
 cd example

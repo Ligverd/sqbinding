@@ -179,7 +179,7 @@ public:
 
 
   template <typename Ret, typename... Args>
-  SQBClass& bindMethod(const char* name, Ret (ClassType::*method)(Args...))
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...))
   {
     detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
       return (self->*method)(args...);
@@ -188,23 +188,53 @@ public:
   }
 
   template <typename Func>
-  SQBClass& bindMethod(const std::string &name, Func func) {
+  SQBClass& bindMethod(const std::string &name, Func func)
+  {
     detail::registerFunction(this, name, func, _strategy.md());
     return *this;
   }
 
+  // overload
   template <typename Ret, typename... Args>
-  SQBClass& bindStaticMethod(const char* name, Ret (ClassType::*method)(Args...))
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...), sig_t<Ret, Args...>)
+  {
+    detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
+          return (self->*method)(args...);
+        }, _strategy.md());
+    return *this;
+  }
+
+  // overload const
+  template <typename Ret, typename... Args>
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const, sig_t<Ret, Args...>)
+  {
+    detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
+          return (self->*method)(args...);
+        }, _strategy.md());
+    return *this;
+  }
+
+
+  template <typename Ret, typename... Args>
+  SQBClass& bindStaticMethod(const std::string &name, Ret (ClassType::*method)(Args...))
   {
     detail::registerFunction(this, name, [method](Args... args) -> Ret {
       return (*method)(args...);
-    }, _strategy.md(true)); //nullptr, true);
+    }, _strategy.md(true));
     return *this;
   }
 
   template <typename Func>
   SQBClass& bindStaticMethod(const std::string &name, Func func) {
     detail::registerFunction(this, name, func, _strategy.md(true));
+    return *this;
+  }
+
+  // overload static
+  template <typename Ret, typename... Args>
+  SQBClass& bindStaticMethod(const std::string &name, Ret (*method)(Args...), sig_t<Ret, Args...>)
+  {
+    detail::registerFunction(this, name, method, _strategy.md(true));
     return *this;
   }
 

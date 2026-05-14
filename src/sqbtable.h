@@ -170,11 +170,19 @@ public:
   }
 
   template <typename Func>
-  SQBTable& bindFunction(const std::string &name, Func func) {
+  SQBTable& bindFunction(const std::string &name, Func func)
+  {
     detail::registerFunction(this, name, func);
     return *this;
   }
 
+  // for overloaded functions
+  template <typename Ret, typename... Args>
+  SQBTable& bindFunction(const std::string &name, Ret(*func)(Args...), sig_t<Ret, Args...>)
+  {
+    detail::registerFunction(this, name, func);
+    return *this;
+  }
 
   SQBTable newTable(const std::string &name)
   {

@@ -23,7 +23,6 @@
 
 
 namespace sqb {
-
 namespace detail {
 
 
@@ -101,6 +100,13 @@ struct function_traits<ReturnType(ClassType::*)(Args...) const> {
 template <typename ClassType, typename ReturnType, typename... Args>
 struct function_traits<ReturnType(ClassType::*)(Args...) > {
   typedef std::function<ReturnType (Args...)> f_type;
+};
+
+// for function ref
+template <typename ReturnType, typename... Args>
+struct function_traits<ReturnType(Args...)> {
+  typedef std::function<ReturnType(Args...)> f_type;
+  typedef ReturnType(*func_ptr)(Args...);
 };
 
 // for function pointers

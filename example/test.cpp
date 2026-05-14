@@ -183,9 +183,9 @@ int main(int argc, char **argv)
         ;
 
 
-    sqb.bindFunction("test", static_cast<int(*)(int)>(test));
-    sqb.bindFunction("test", static_cast<std::string(*)(std::string)>(test));
-    //sqb.bindFunction("test", static_cast<float(*)(float)>(test));
+    sqb.bindFunction("test", test, sqb::sig<int,int>());
+    sqb.bindFunction("test", test, sqb::sig<std::string,std::string>());
+    // or classic cast sqb.bindFunction("test", static_cast<int(*)(int)>(test));
 
     sqb.bindFunction("f_str_int", f_str_int);
 
@@ -196,8 +196,8 @@ int main(int argc, char **argv)
         .bindConstructor([](std::string s) { return new Test(s, 55); })
         .bindMethod("single", &Test::single)
         .bindMethod("lambda", [](Test *self, int i, std::string s) { return self->multi(i,s); } )
-        .bindMethod("multi", static_cast<std::string(Test::*)(int)>(&Test::multi))
-        .bindMethod("multi", static_cast<std::string(Test::*)(int,std::string)>(&Test::multi))
+        .bindMethod("multi", &Test::multi, sqb::sig<std::string,int>())
+        .bindMethod("multi", &Test::multi, sqb::sig<std::string,int,std::string>())
         .bindProp("name", &Test::name)
         .bindProp("idx", &Test::idx, true)
         //.bindMethod("_shiftl", [](Test *self, int i) { *self << i; return *self; })
@@ -219,8 +219,8 @@ int main(int argc, char **argv)
         .bindConstructor([](std::string s) { return new Test(s, 55); })
         .bindMethod("single", &Test::single)
         .bindMethod("lambda", [](Test *self, int i, std::string s) { return self->multi(i,s); } )
-        .bindMethod("multi", static_cast<std::string(Test::*)(int)>(&Test::multi))
-        .bindMethod("multi", static_cast<std::string(Test::*)(int,std::string)>(&Test::multi))
+        .bindMethod("multi", &Test::multi, sqb::sig<std::string,int>())
+        .bindMethod("multi", &Test::multi, sqb::sig<std::string,int,std::string>())
         .bindProp("name", &Test::name)
         .bindProp("idx", &Test::idx, true)
         .bindMethod("_shiftl", [](Test *self, int i) { *self << i; return self; })

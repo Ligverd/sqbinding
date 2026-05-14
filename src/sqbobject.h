@@ -14,6 +14,14 @@ extern "C" {
 
 namespace sqb {
 
+// clarifying the signature for overloaded methods and functions
+template <typename Ret, typename... Args>
+struct sig_t {};
+template <typename Ret, typename... Args>
+sig_t<Ret, Args...> sig() { return sig_t<Ret, Args...>(); }
+
+
+
 
 // std::string -> const char*
 template<typename T>
