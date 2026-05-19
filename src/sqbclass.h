@@ -13,6 +13,10 @@
 
 namespace sqb {
 
+// smart type carrier
+template<template<typename> class T>
+struct Smart {};
+
 
 struct SmartBase {
   detail::ExtractFunc pack    = nullptr;
@@ -20,65 +24,112 @@ struct SmartBase {
   SQRELEASEHOOK releaseHook   = nullptr;
   bool is_smart = false;
 
-  size_t typetagSmart = 0;
+  size_t thisTypetagOriginal  = 0;
+  size_t thisTypetagTarget    = 0;
 
-
-  SmartBase() {
+  SmartBase()
+  {
     pack     = [](void* c) -> void* { return c; };
     extract  = [](void* p) -> void* { return p; };
     is_smart = false;
   }
-};
 
-template<template<typename> class T>
-struct Smart : public SmartBase {
-  template<typename ClassType>
-  struct Rebind {
-    using Container = T<ClassType>;
-  };
+  const detail::MethodDescriptor md(bool isStatic=false) const
+  {
+    if (thisTypetagOriginal == 0 && thisTypetagTarget == 0)
+      throw std::runtime_error("Smart not prepared!");
+
+    auto ext = isStatic ? nullptr : extract;
+    return {ext, thisTypetagOriginal, thisTypetagTarget, isStatic};
+  }
 
   template<typename ClassType, typename BaseClassType = void>
-  static SmartBase prepare() {
+  static SmartBase create() {
+    auto &smart_map = getSmartMap();
+
+    using isVoidBaseClassType = typename std::is_same<BaseClassType, void>::type;
+
+    if (!isVoidBaseClassType::value) {
+      auto it = smart_map.find(typeid(BaseClassType).hash_code());
+      if (it != smart_map.end()) {
+        SmartBase s = it->second;
+        if (s.is_smart)
+          throw std::runtime_error( "class " + types::name<ClassType>() + " need must be Smart as " + types::name<BaseClassType>() );
+      }
+    }
+
     SmartBase sb;
-    using Container = T<ClassType>;
 
-    sb.pack        = [](void* c) -> void* { return new Container(static_cast<ClassType*>(c)); };
-    sb.extract     = [](void* p) -> void* { return static_cast<Container*>(p)->get(); };
-    sb.releaseHook = &types::release_hook_delete<Container>;
-    sb.is_smart    = true;
-    sb.typetagSmart= typeid(Container).hash_code();
+    sb.is_smart            = false;
+    sb.thisTypetagOriginal = typeid(ClassType*).hash_code();
+    sb.thisTypetagTarget   = sb.thisTypetagOriginal;
+    sb.releaseHook         = &types::release_hook_delete<ClassType>;
 
-    using BaseClassIsVoid = typename std::is_same<BaseClassType, void>::type;
-    if (BaseClassIsVoid::value)
-      types::Type::create<T<ClassType>>(OT_INSTANCE);
-    else
-      types::Type::create<T<ClassType>, T<BaseClassType>>(OT_INSTANCE);
+    smart_map[ typeid(ClassType).hash_code() ] = sb;
 
     return sb;
   }
+
+
+  template<typename ClassType, template<typename> class T>
+  static SmartBase create(Smart<T> s) {
+    return create<ClassType,void>(s);
+  }
+
+
+  template<typename ClassType, typename BaseClassType, template<typename> class T>
+  static SmartBase create(Smart<T>) {
+    auto &smart_map = getSmartMap();
+
+    using isVoidBaseClassType = typename std::is_same<BaseClassType, void>::type;
+
+    if (isVoidBaseClassType::value) {
+      types::Type::create<T<ClassType>>(OT_INSTANCE);
+    }else{
+      auto it = smart_map.find(typeid(BaseClassType).hash_code());
+      if (it != smart_map.end()) {
+        SmartBase s = it->second;
+        if (!s.is_smart)
+          throw std::runtime_error( "class " + types::name<ClassType>() + " cannot be smart because " + types::name<BaseClassType>() + " is not Smart");
+        if ( s.thisTypetagOriginal != typeid(T<BaseClassType>).hash_code() )
+          throw std::runtime_error("The Smart type must match the " + types::name<BaseClassType>() + " Smart type.");
+      }
+
+      types::Type::create<T<ClassType>, T<BaseClassType>>(OT_INSTANCE);
+    }
+
+    using Container = T<ClassType>;
+    SmartBase sb;
+
+    sb.pack        = [](void* c) -> void* { return new Container(static_cast<ClassType*>(c)); };
+    sb.extract     = [](void* p) -> void* { return static_cast<Container*>(p)->get(); };
+
+    sb.is_smart    = true;
+    sb.thisTypetagOriginal = typeid(Container).hash_code();
+    sb.thisTypetagTarget   = typeid(ClassType).hash_code();
+    sb.releaseHook = &types::release_hook_delete<Container>;
+
+    smart_map[ typeid(ClassType).hash_code() ] = sb;
+
+    return sb;
+  }
+
+protected:
+  static std::unordered_map<size_t,SmartBase>& getSmartMap()
+  {
+    static std::unordered_map<size_t, SmartBase> smart_map;
+    return smart_map;
+  }
 };
+
+
 
 
 template<typename ClassType, typename BaseClassType = void>
 class SQBClass : public SQBObject
 {
 protected:
-  struct SmartStrategy {
-    void* (*packFunc)(ClassType*)   = nullptr;
-    detail::ExtractFunc extractFunc = nullptr;
-    SQRELEASEHOOK releaseHook       = nullptr;
-
-    size_t      thisTypetagOriginal  = 0;
-    size_t      thisTypetagTarget    = 0;
-
-    const detail::MethodDescriptor md(bool isStatic=false) const
-    {
-      auto ext = isStatic ? nullptr : extractFunc;
-      return {ext, thisTypetagOriginal, thisTypetagTarget, isStatic};
-    }
-  };
-
-  SmartStrategy _strategy;
+  SmartBase _strategy;
 
 public:
 
@@ -91,8 +142,9 @@ public:
   }
 
 
-  SQBClass(const SQBObject &parent, const std::string &name, SmartBase sb = SmartBase())
-      : SQBObject(parent.vm)
+  SQBClass(const SQBObject &parent, const std::string &name, SmartBase sb)
+      : SQBObject(parent.vm),
+        _strategy(sb)
   {
     if (name.empty())
       throw std::runtime_error("Failed create class with empty name");
@@ -112,8 +164,8 @@ public:
       sq_newclass(vm, false); // [table, string] without inheritance
     }else{
       const types::Type &t = types::Type::get<BaseClassType>();
-      if (t.type == 0 )
-        throw std::runtime_error("BaseClassType not registered yet");
+      if (t.type != OT_INSTANCE)
+        throw std::runtime_error("class " + types::name<BaseClassType>() + " not registered yet");
 
       types::Type::create<ClassType,  ClassType*, BaseClassType, BaseClassType*>(OT_INSTANCE);
       types::Type::create<ClassType*, ClassType,  BaseClassType, BaseClassType*>(OT_INSTANCE);
@@ -123,17 +175,8 @@ public:
       sq_newclass(vm, true);  // [table, string, class]
     }
 
-    size_t typetag = sb.typetagSmart;
-    if (typetag == 0) {
-      typetag  = typeid(ClassType).hash_code();
-      _strategy.thisTypetagOriginal = typetag;
-      _strategy.thisTypetagTarget   = typetag;
-    }else{
-      _strategy.thisTypetagOriginal = typetag;
-      _strategy.thisTypetagTarget   = typeid(ClassType).hash_code();
-    }
-
-    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(typetag));
+    // set typetag
+    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(_strategy.thisTypetagOriginal));
 
     sq_getstackobj(vm, -1, &hsqObject);
     sq_addref(vm, &hsqObject);
@@ -148,10 +191,6 @@ public:
 
     _getterMap = detail::initPropHook<ClassType>(this, false);
     _setterMap = detail::initPropHook<ClassType>(this, true);
-
-    _strategy.packFunc    = reinterpret_cast<void*(*)(ClassType*)>(sb.pack);
-    _strategy.extractFunc = sb.extract;
-    _strategy.releaseHook = sb.releaseHook ? sb.releaseHook : &types::release_hook_delete<ClassType>;
   }
 
   template <typename... Args>
@@ -159,12 +198,12 @@ public:
     //auto func = [](Args... args){ return new ClassType(args...); };
     //instanceAllocator(func);
     HSQUIRRELVM v = vm;
-    SmartStrategy h = _strategy;
+    SmartBase sb = _strategy;
 
-    detail::registerFunction(this, "constructor", [v, h](Args... args) -> void {
-      auto obj = h.packFunc( new ClassType(args...) );
+    detail::registerFunction(this, "constructor", [v, sb](Args... args) -> void {
+      auto obj = sb.pack( new ClassType(args...) );
       sq_setinstanceup(v, 1, obj );
-      sq_setreleasehook(v, 1, h.releaseHook);
+      sq_setreleasehook(v, 1, sb.releaseHook);
       sq_pop(v, 2);
     });
     return *this;
@@ -255,21 +294,21 @@ public:
   */
   template<typename PropType>
   SQBClass& bindProp(const std::string &name, PropType ClassType::* prop, bool readOnly = false) {
-    auto strategy = _strategy;
+    SmartBase sb = _strategy;
 
-    (*_getterMap)[name] = [prop, strategy](HSQUIRRELVM vm) {
+    (*_getterMap)[name] = [prop, sb](HSQUIRRELVM vm) {
       SQUserPointer up = types::popValuePointer(vm, -3);
-      ClassType *c = static_cast<ClassType*>( strategy.extractFunc(up) );
+      ClassType *c = static_cast<ClassType*>( sb.extract(up) );
       types::pushValue<PropType>(vm, c->*prop);
       return 1;
     };
 
-    (*_setterMap)[name] = [prop, name, readOnly, strategy](HSQUIRRELVM vm) {
+    (*_setterMap)[name] = [prop, name, readOnly, sb](HSQUIRRELVM vm) {
       if (readOnly) {
         error(vm, "property '%s' read only!", name);
       }else{
         SQUserPointer up = types::popValuePointer(vm, -3);
-        ClassType *c = static_cast<ClassType*>( strategy.extractFunc(up) );
+        ClassType *c = static_cast<ClassType*>( sb.extract(up) );
         c->*prop = types::popValue<PropType>(vm, -2);
       }
       return 0;
@@ -280,21 +319,21 @@ public:
 
   template<typename PropType>
   SQBClass& bindProp(const std::string &name, std::function<PropType(ClassType*)> getter, std::function<void(ClassType*, PropType)> setter = nullptr) {
-    auto strategy = _strategy;
+    SmartBase sb = _strategy;
 
     if (getter) {
-      (*_getterMap)[name] = [getter, strategy](HSQUIRRELVM vm) {
+      (*_getterMap)[name] = [getter, sb](HSQUIRRELVM vm) {
         SQUserPointer up = types::popValuePointer(vm, -3);
-        ClassType *c = strategy.extractInstance(up);
+        ClassType *c = static_cast<ClassType*>( sb.extract(up) );
         types::pushValue<PropType>(vm, getter(c));
         return 1;
       };
     }
 
     if (setter) {
-      (*_setterMap)[name] = [setter, strategy](HSQUIRRELVM vm) {
+      (*_setterMap)[name] = [setter, sb](HSQUIRRELVM vm) {
         SQUserPointer up = types::popValuePointer(vm, -4);
-        ClassType *c = strategy.extractInstance(up);
+        ClassType *c = static_cast<ClassType*>( sb.extract(up) );
         setter(c, types::popValue<PropType>(vm, -2));
         return 0;
       };
@@ -325,12 +364,12 @@ private:
   void instanceAllocator(const std::function<Ret(Args...)> func)
   {
     HSQUIRRELVM v = vm;
-    SmartStrategy h = _strategy;
+    SmartBase sb = _strategy;
 
-    detail::registerFunction(this, "constructor", [v, h, func](Args... args) -> void {
-      auto data = h.packFunc(new ClassType( func(args...) ));
+    detail::registerFunction(this, "constructor", [v, sb, func](Args... args) -> void {
+      auto data = sb.pack(new ClassType( func(args...) ));
       sq_setinstanceup(v, 1, data);
-      sq_setreleasehook(v, 1, h.releaseHook);
+      sq_setreleasehook(v, 1, sb.releaseHook);
     });
   }
 
@@ -338,11 +377,11 @@ private:
   void instanceAllocator(const std::function<Ret(Args...)> func)
   {
     HSQUIRRELVM v = vm;
-    SmartStrategy h = _strategy;
-    detail::registerFunction(this, "constructor", [v, h, func](Args... args) -> void {
-      auto obj = h.packFunc( func(args...) );
+    SmartBase sb = _strategy;
+    detail::registerFunction(this, "constructor", [v, sb, func](Args... args) -> void {
+      auto obj = sb.pack( func(args...) );
       sq_setinstanceup(v, 1, obj);
-      sq_setreleasehook(v, 1, h.releaseHook);
+      sq_setreleasehook(v, 1, sb.releaseHook);
     });
   }
 
@@ -353,22 +392,6 @@ private:
 
 
   std::function<size_t(size_t(*)( ))> get_base_hash;
-
-
-  // clac smart base type
-  struct IHashLink {
-    virtual size_t getDerivedHash() = 0;
-    virtual size_t getBaseHash() = 0;
-    virtual ~IHashLink() = default;
-  };
-
-  template<template<typename> class T, typename D, typename B>
-  struct HashLinkImpl : public IHashLink {
-    size_t getDerivedHash() override { return typeid(T<D>).hash_code(); }
-    size_t getBaseHash()    override { return typeid(T<B>).hash_code(); }
-  };
-
-  std::function<std::unique_ptr<IHashLink>(size_t)> link_factory;
 
 };
 

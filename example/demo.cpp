@@ -43,6 +43,10 @@ public:
     : id(id)
   {}
 
+  ~Base() {
+    printf("Base destroy\n");
+  }
+
   void echo() {
     std::cout << name << " id:" << id << std::endl;
   }
@@ -70,6 +74,10 @@ public:
     : Base("Cat")
   {}
 
+  ~Cat() {
+    printf("Cat destroy\n");
+  }
+
   std::string jump() {
     return "Cat jump";
   }
@@ -81,6 +89,10 @@ public:
     : Base("Bird")
   {}
 
+  ~Bird() {
+    printf("Bird destroy\n");
+  }
+
   std::string fly() {
     return "Bird fly";
   }
@@ -91,6 +103,9 @@ class Collect {
 
 public:
   Collect() {}
+  ~Collect() {
+    printf("Collect destroy\n");
+  }
 
   void push(std::shared_ptr<Base> a) {
     animals.push_back(a);
@@ -115,7 +130,7 @@ class MyPtr
 
 
 void init(sqb::SQBinding &sqb) {
-  sqb.bindClass<Base>("Base")
+  sqb.bindClass<Base>("Base", sqb::Smart<std::shared_ptr>())
       .bindConstructor()
       .bindConstructor<std::string>()
       .bindConstructor<int>()

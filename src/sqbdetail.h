@@ -600,7 +600,7 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
   FunctionVariant* fv = findFunctionVariant(obj, name);
 
   if (fv == nullptr) {
-    int top = obj->push(); //sq_pushroottable(vm);
+    int top = obj->push();
 
     sq_pushstring(vm, name.c_str(), name.size());
 

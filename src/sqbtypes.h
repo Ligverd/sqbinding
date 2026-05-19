@@ -15,10 +15,42 @@
 #include <vector>
 #include <unordered_map>
 
+#ifdef __GNUG__
+#include <cxxabi.h>
+#include <stdlib.h>
+#endif
+
+
 //#include <sstream>
 
 namespace sqb {
 namespace types {
+
+
+template<typename T>
+std::string name() {
+  const char* mangled = typeid(T).name();
+
+#ifdef __GNUG__
+  int status = 0;
+  char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+  if (status == 0 && demangled) {
+    std::string result(demangled);
+    std::free(demangled);
+    return result;
+  }
+  return std::string(mangled);
+#else
+  // MSVC и другие
+  return std::string(mangled);
+#endif
+}
+
+template<typename T>
+std::string name(const T& obj) {
+  return name<T>();
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////

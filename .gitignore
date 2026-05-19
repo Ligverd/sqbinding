@@ -6,6 +6,7 @@ build/
 .tools/
 .dev/
 test/
+create_selfextract.sh
 *~
 *.autosave
 *.a

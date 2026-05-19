@@ -234,24 +234,23 @@ public:
 
   template <typename A>
   SQBClass<A> bindClass(const std::string &name) {
-    return SQBClass<A>(*this, name);
+    return SQBClass<A>(*this, name, SmartBase::create<A>());
   }
 
   template <typename A, typename B>
   SQBClass<A, B> bindClass(const std::string &name) {
-    return SQBClass<A, B>(*this, name);
+    return SQBClass<A,B>(*this, name, SmartBase::create<A,B>());
   }
 
   template <typename A, template<typename> class S>
   SQBClass<A> bindClass(const std::string &name, Smart<S> strategy) {
-    return SQBClass<A>(*this, name, Smart<S>::template prepare<A>());
+    return SQBClass<A>(*this, name, SmartBase::create<A>(strategy));
   }
 
   template <typename A, typename B, template<typename> class S>
   SQBClass<A, B> bindClass(const std::string &name, Smart<S> strategy) {
-    return SQBClass<A, B>(*this, name, Smart<S>::template prepare<A, B>());
+    return SQBClass<A,B>(*this, name, SmartBase::create<A,B>(strategy));
   }
-
 
 
   SQBFunction getFunction(const std::string &name)
