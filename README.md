@@ -28,6 +28,19 @@ The problem was that, once again, ready-made bindings did not provide what was n
 - Custom types via `popValue`/`pushValue` specialization
 - Execute scripts from strings or files
 
+## Tested Environments
+
+The project has been successfully built and tested on the following configurations:
+
+
+| Operating System | Compiler | Status |
+| :--- | :--- | :---: |
+| **macOS** | Apple Clang 16.0 | [PASS] |
+| **Linux** | GCC 11.2 | [PASS] |
+| **Linux** | Clang 13.0 | [PASS] |
+| **Windows** | - | [not tested] |
+
+
 ## What it looks like in a real project
 
 The goal was to get a tool with which you can easily get the same API in C++ and Squirrel.
