@@ -1,3 +1,7 @@
+![C++11](https://img.shields.io/badge/C%2B%2B-11-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey)
+
 # SQBinding
 
 Binding to the scripting language [Squirrel](http://www.squirrel-lang.org/).
@@ -674,8 +678,10 @@ void externalFunction(MyPtr<Base> p);
 
 The repository is self-contained — it downloads Squirrel, builds it statically, compiles SQBinding, and runs the tests.
 
+
 ```bash
-cd example
+git clone --recursive https://github.com/Ligverd/sqbinding
+cd sqbinding/example
 mkdir .build && cd .build
 cmake ..
 make
