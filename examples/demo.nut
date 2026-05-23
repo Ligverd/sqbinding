@@ -20,7 +20,7 @@ collect.push(c2)
 collect.push(b1)
 collect.push(b2)
 
-for (local i = 0; i < 10; i++) {
+for (local i = 0; i < 2; i++) {
   local c = Cat()
   local b = Bird()
   c.set_name("#Cat ");

@@ -674,49 +674,72 @@ void externalFunction(std::shared_ptr<Base> p);
 void externalFunction(MyPtr<Base> p);
 ```
 
-## Building and running the example
-
-The repository is self-contained — it downloads Squirrel, builds it statically, compiles SQBinding, and runs the tests.
-
+## Quick start
 
 ```bash
-git clone --recursive https://github.com/Ligverd/sqbinding
-cd sqbinding/example
+# Prepare
+https://github.com/Ligverd/sqbinding.git
+cd sqbinding
 mkdir .build && cd .build
-cmake ..
+
+# Build (universal)
+cmake .. -DBUILD_EXAMPLES=ON
+cmake --build . --config Release
+
+# (Linux/macOS)
+./examples/Release/test
+./examples/Release/demo
+
+# Windows
+.\examples\Release\test.exe
+.\examples\Release\demo.exe
+
+
+# Other build methods
+
+# Linux/macOS (make)
+cmake .. -DBUILD_EXAMPLES=ON
 make
-./test
-./demo
+
+# Ninja
+cmake .. -GNinja -DBUILD_EXAMPLES=ON
+ninja
+
+# Windows (Visual Studio):
+cmake .. -G "Visual Studio 17 2022" -DBUILD_EXAMPLES=ON
+msbuild sqb.sln /p:Configuration=Release
 ```
 
-Test output:
+## Add SQBinding in your project
 
-```
->>> hello from script as string
-[PASS ] execute script from string
-[PASS ] execute script from file
-[PASS ] bind function
-[PASS ] bind table var
-[PASS ] bind table function
-[PASS ] bind multi(int)
-[PASS ] bind multi(int, string)
-[PASS ] bind static method
-[PASS ] bind static prop
-[PASS ] bind operator<<
-[PASS ] bind operator|
-[PASS ] check cross var
-[PASS ] check object shared_ptr
-[PASS ] check arg shared_ptr
-[PASS ] array<int> set/get
-[PASS ] array<int> send as argument
-[PASS ] array<string> set/get
-[PASS ] array<string> send as argument
-[PASS ] array init on create(vector) set/get
-[PASS ] array init on create(5) set/get
-[PASS ] custom instanceof Base
-[PASS ] custom has a Base method
-[PASS ] calling an inherited method
-[PASS ] custom type and call
-```
+If used CMake
 
-The full code of the tests is in `example/test.cpp` and demo `example/demo.cpp`.
+
+```cmake
+# Example: add sqb in your project
+cmake_minimum_required(VERSION 3.14)
+
+project(my_app VERSION 1.0.0 LANGUAGES C CXX)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Use sqb from source (recommended)
+add_subdirectory(external/sqb)
+
+# Use installed sqb
+# find_package(sqb REQUIRED)
+
+# Optional: Pass options to sqb (if using add_subdirectory)
+#set(USE_INTERNAL_SQUIRREL ON CACHE BOOL "Use internal squirrel" FORCE)  # ON  default
+#set(BUILD_EXAMPLES OFF CACHE BOOL "Don't build sqb examples" FORCE)     # OFF default
+
+# Your application
+add_executable(my_app src/main.cpp)
+
+# Link with sqb (all dependencies including squirrel are automatic)
+target_link_libraries(my_app PRIVATE sqb)
+
+# If you need additional include directories
+# target_include_directories(my_app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+```
