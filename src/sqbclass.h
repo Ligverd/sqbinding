@@ -61,7 +61,7 @@ struct SmartBase {
     SmartBase sb;
 
     sb.is_smart            = false;
-    sb.thisTypetagOriginal = typeid(ClassType*).hash_code();
+    sb.thisTypetagOriginal = typeid(ClassType).hash_code();
     sb.thisTypetagTarget   = sb.thisTypetagOriginal;
     sb.releaseHook         = &types::release_hook_delete<ClassType>;
 
