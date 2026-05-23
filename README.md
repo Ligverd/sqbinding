@@ -239,6 +239,26 @@ std::string str = func("Ligverd").ret<std::string>();
 
 ```
 
+Script passes the callback to C++
+
+```lua
+camera.onEvent(function(event) {
+  print("Detected: " + event.type);
+});
+```
+
+C++ accepts and saves
+
+```cpp
+sqb.bindClass<Camera>("Camera")
+   .bindMethod("onEvent", [](Camera* self, sqb::SQBFunction callback) {
+      self->setCallback([callback](EventData e) {
+        callback(e);
+      });
+      return self;
+   });
+```
+
 ## Working with variables
 
 Three operations: bind, set, and get.
