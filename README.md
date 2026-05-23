@@ -698,7 +698,7 @@ void externalFunction(MyPtr<Base> p);
 
 ```bash
 # Prepare
-https://github.com/Ligverd/sqbinding.git
+git clone https://github.com/Ligverd/sqbinding.git
 cd sqbinding
 mkdir .build && cd .build
 
@@ -740,9 +740,6 @@ If used CMake
 cmake_minimum_required(VERSION 3.14)
 
 project(my_app VERSION 1.0.0 LANGUAGES C CXX)
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Use sqb from source (recommended)
 add_subdirectory(external/sqb)
