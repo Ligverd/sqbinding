@@ -314,7 +314,7 @@ namespace types {
 template<>
 inline CustomType popValue<CustomType>(HSQUIRRELVM vm, SQInteger idx) {
   if (sq_gettype(vm, idx) != OT_TABLE)
-    throw std::runtime_error("can`t convert to CustomType");
+    throw std::runtime_error("can't convert to CustomType");
 
   CustomType val;
 
@@ -637,7 +637,7 @@ In these cases, it is convenient to use std::shared_ptr / std::unique_ptr / or e
 
 Don't worry — you don't have to do anything special. Just bind in the same way, specifying in the constructor that you want to use the Smart Container.
 
-In 90% of cases, the usual Smart class is enough for you, it supports all types of smart pointers with an interface like stared_ptr.
+In 90% of cases, the usual Smart class is enough for you, it supports all types of smart pointers with an interface like shared_ptr.
 That is, if you create your CustomPtr and implement a constructor through which you can pass a raw pointer and the extractor .get() method, you can also use the Smart class.
 
 
@@ -662,7 +662,7 @@ You can also fully implement your own Smart Class, but it is much easier to adap
 
 ### Important: passing this and an instance of the class.
 
-When a method is bound using a lambda expression, it always gets an open pointer to the type of this class as the first argument, regardless of whether the class is registered as a regular instance or via Smart.
+When a method is bound using a lambda expression, it always gets an raw pointer to the type of this class as the first argument, regardless of whether the class is registered as a regular instance or via Smart.
 
 It works the same for a regular class and for a class via Smart !!!
 
