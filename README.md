@@ -19,7 +19,9 @@ The problem was that, once again, ready-made bindings did not provide what was n
 
 **What SQBinding can do**
 
+- Ultra-lightweight — less than 3000 lines of clean C++ code
 - Multiple independent VMs: `sqb::SQBinding vm1, vm2, vm3;`
+- Can wrap an already running VM: `sqb::SQBinding sqb(raw_vm);`
 - Bind free functions, lambdas, and methods
 - Overloaded functions, methods, and static methods via `sqb::sig<Ret, Args...>()`
 - Fluent interface for class binding: `.bindConstructor().bindMethod().bindProp()`
