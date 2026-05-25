@@ -1,6 +1,6 @@
 ![C++11](https://img.shields.io/badge/C%2B%2B-11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-green)
 
 # SQBinding
 
@@ -42,7 +42,7 @@ The project has been successfully built and tested on the following configuratio
 | **macOS** | Apple Clang 16.0 | [PASS] |
 | **Linux** | GCC 11.2 | [PASS] |
 | **Linux** | Clang 13.0 | [PASS] |
-| **Windows** | - | [not tested] |
+| **Windows** | MSVC 19.51 (Visual Studio 2026) | [PASS] |
 
 
 ## What it looks like in a real project
