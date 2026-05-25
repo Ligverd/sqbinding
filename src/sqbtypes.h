@@ -155,7 +155,7 @@ public:
 
   static bool can_convert(size_t from_hash, size_t to_hash)
   {
-    if (from_hash == to_hash or from_hash == 0) // from_hash == 0 dont check
+    if (from_hash == to_hash || from_hash == 0) // from_hash == 0 dont check
       return true;
 
     auto& type_map = get_type_map();
