@@ -2,11 +2,16 @@
 #define UT_H
 
 #include <iostream>
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <unistd.h>  // for isatty()
 #include <cstdio>    // for fileno()
+
+#ifdef _WIN32
+#  include <io.h>     // Windows isatty()
+#  define isatty _isatty
+#  define fileno _fileno
+#else
+#  include <unistd.h> // Linux / macOS
+#endif
+
 
 namespace ut {
 struct Check {
