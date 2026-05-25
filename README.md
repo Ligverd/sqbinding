@@ -660,7 +660,7 @@ sqb.bindClass<Base>("Base", sqb::Smart<std::shared_ptr>())
 
 SQBinding will create std::shared_ptr<Base> and give it to Squirrel.
 
-You can also fully implement your own Smart Class, but it is much easier to adapt the existing container to the stared_ptr interface.
+You can also fully implement your own Smart Class, but it is much easier to adapt the existing container to the shared_ptr interface.
 
 ### Important: passing this and an instance of the class.
 
