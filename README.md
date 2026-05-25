@@ -45,6 +45,18 @@ The project has been successfully built and tested on the following configuratio
 | **Windows** | MSVC 19.51 (Visual Studio 2026) | [PASS] |
 
 
+## Automatic Dependency Management ("Batteries Included")
+
+SQBinding completely automates the lifecycle of the Squirrel scripting language. You don't need to download, build, or link Squirrel manually.
+
+* **Embedded & Patched Squirrel:** By default, SQBinding automatically downloads the correct version of Squirrel from GitHub, applies the `01_meta_method.patch` (enabling advanced metamethods like `_shiftl` and `_or`), and builds it as a static library along with your project.
+* **Zero Configuration:** Integration is as simple as adding `add_subdirectory` in CMake. All internal dependencies, compiler flags, and linkings are handled automatically.
+* **System Squirrel Support:** For package maintainers or specific environments, you can optionally force the use of an unpatched system-wide Squirrel library by toggling a CMake cache variable:
+
+```cmake
+set(USE_INTERNAL_SQUIRREL OFF CACHE BOOL "Use system squirrel" FORCE)
+```
+
 ## What it looks like in a real project
 
 The goal was to get a tool with which you can easily get the same API in C++ and Squirrel.
