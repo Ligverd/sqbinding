@@ -5,11 +5,13 @@
 #include <cstdio>    // for fileno()
 
 #ifdef _WIN32
-#  include <io.h>     // Windows isatty()
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  include <io.h>             // Windows isatty()
 #  define isatty _isatty
 #  define fileno _fileno
 #else
-#  include <unistd.h> // Linux / macOS
+#  include <unistd.h>         // Linux / macOS
 #endif
 
 
