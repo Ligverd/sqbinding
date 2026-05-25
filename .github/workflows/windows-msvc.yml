@@ -1,0 +1,27 @@
+name: MSVC Windows Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON
+
+    - name: Build Project
+      run: cmake --build ${{ github.workspace }}/build --config Release
+
+    - name: Run Tests
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        .\examples\Release\test.exe
+        .\examples\Release\demo.exe
