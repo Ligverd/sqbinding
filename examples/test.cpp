@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstdarg>
 #include <cassert>
-#include <unistd.h>
 #include "sqbinding.h"
 #include "ut/check.h"
 
