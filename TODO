@@ -1,0 +1,2 @@
+- sqb::version() / sqb::squirrel_version()
+- simple thread-safety add std::recursive_mutex, further plans include a full-fledged patch of the vm itself.
