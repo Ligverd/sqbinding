@@ -575,8 +575,8 @@ sqb.bindClass<Base>("Base")
    .bindStaticMethod("resetAll", &Base::resetAll)
    .bindProp("id", &Base::id)
    .bindProp("type", &Base::type, true) // <-- true - readonly
-   .bindProp("next", [](Base *self){ return self->id+1; }) // <-- getter only
-   .bindProp("name", [](Base *self){ return self->name; }, [](Base *self, std::string n){ self->name = n; })
+   .bindProp<int>("next", [](Base *self){ return self->id+1; }) // <-- getter only
+   .bindProp<std::string>("name", [](Base *self){ return self->name; }, [](Base *self, std::string n){ self->name = n; })
    .bindStaticMethod("getStaticVersion", [](){ return Base::version })
    .bindStaticMethod("setStaticVersion", [](int v){ Base::version = v; })
    .bindMethod("_add", &Base::operator+)

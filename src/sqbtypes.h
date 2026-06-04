@@ -310,7 +310,7 @@ inline T popValue(HSQUIRRELVM vm, SQInteger idx)
 
   SQObjectType type = sq_gettype(vm, idx);
   if (type != OT_USERDATA && type != OT_USERPOINTER && type != OT_INSTANCE && type != OT_ARRAY) {
-    throw std::runtime_error("Expected userdata type, need custom popValue");
+    throw std::runtime_error("Expected userdata type " + types::name<T>() + ", need custom popValue");
   }
 
   SQUserPointer typetag;

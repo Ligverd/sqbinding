@@ -18,6 +18,7 @@ if(USE_INTERNAL_SQUIRREL)
         #GIT_TAG master
         GIT_TAG b29d442bfa74ff270c5749007c068c28485e8708
         GIT_SHALLOW TRUE
+        #PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patch/03_add_gdb3.patch
     )
 
     set(SQ_DISABLE_INTERPRETER ON CACHE BOOL "" FORCE)
