@@ -24,6 +24,7 @@ The problem was that, once again, ready-made bindings did not provide what was n
 - Can wrap an already running VM: `sqb::SQBinding sqb(raw_vm);`
 - Bind free functions, lambdas, and methods
 - Overloaded functions, methods, and static methods via `sqb::sig<Ret, Args...>()`
+- Optional arguments via `sqb::sig<Ret, Args...>(NumberOptionalArguments)`
 - Fluent interface for class binding: `.bindConstructor().bindMethod().bindProp()`
 - Native any smart pointer support via `sqb::Smart<T>()`
 - Inheritance — base class methods available in derived classes, `instanceof` works
@@ -221,6 +222,14 @@ sqb.bindFunction("test", test, sqb::sig<std::string,std::string>());
 ```
 
 No static_cast, no macros. Just sqb::sig<Ret, Args...>() to resolve the overload.
+
+If there is only one function or method, but it contains optional arguments, just specify their number.
+
+```
+int test(int i, int a = 0) { return i + a; }
+
+sqb.bindFunction("test", test, sqb::sig<int,int,int>(1));
+```
 
 
 The reverse — calling a Squirrel function from C++.

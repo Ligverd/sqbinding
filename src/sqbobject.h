@@ -14,11 +14,15 @@ extern "C" {
 
 namespace sqb {
 
-// clarifying the signature for overloaded methods and functions
+// clarifying the signature for overloaded methods and functions + optional arguments
 template <typename Ret, typename... Args>
-struct sig_t {};
+struct sig_t {int numberOptionalArguments = 0;};
 template <typename Ret, typename... Args>
-sig_t<Ret, Args...> sig() { return sig_t<Ret, Args...>(); }
+sig_t<Ret, Args...> sig(int numberOptionalArguments = 0) {
+  auto s = sig_t<Ret, Args...>();
+  s.numberOptionalArguments = numberOptionalArguments;
+  return s;
+}
 
 
 

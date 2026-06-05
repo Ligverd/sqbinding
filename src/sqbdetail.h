@@ -131,15 +131,18 @@ struct MethodDescriptor {
   size_t      thisTypetagOriginal;
   size_t      thisTypetagTarget;
   bool        isStatic;
+  size_t      numberOptionalArguments;
 
   MethodDescriptor(ExtractFunc ex = nullptr,
                   size_t original = 0,
                   size_t target = 0,
-                  bool stat = false)
+                  bool stat = false,
+                  size_t numberOptionalArguments = 0)
       : thisExtractor(ex),
         thisTypetagOriginal(original),
         thisTypetagTarget(target),
-        isStatic(stat)
+        isStatic(stat),
+        numberOptionalArguments(numberOptionalArguments)
   {}
 
   bool isMethod() const
@@ -485,9 +488,14 @@ struct FunctionVariant {
   {}
 
   template <typename Ret, typename... Args>
-  void append(const std::string& name, const std::function<Ret(Args...)> &func)
+  void append(const std::string& name, const std::function<Ret(Args...)> &func, size_t numberOptionalArguments = 0)
   {
     Signature signature({typeid(Args).hash_code()...}, typeid(Ret).hash_code());
+
+    if (signature.number_required_arguments < numberOptionalArguments)
+      throw std::runtime_error("more optional arguments(" + std::to_string(numberOptionalArguments) + ") than regular arguments("+ std::to_string(signature.arg_hashes.size()) +") " + name);
+
+    signature.number_required_arguments -= numberOptionalArguments;
 
     for (auto& item : functions) {
       if (item.first == signature)
@@ -635,7 +643,7 @@ void registerFunction(SQBObject *obj, const std::string& name, const std::functi
     obj->freeStack(top);
   }
 
-  fv->append(name, func);
+  fv->append(name, func, md.numberOptionalArguments);
 }
 
 

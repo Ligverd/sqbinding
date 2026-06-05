@@ -34,13 +34,13 @@ struct SmartBase {
     is_smart = false;
   }
 
-  const detail::MethodDescriptor md(bool isStatic=false) const
+  const detail::MethodDescriptor md(bool isStatic=false, size_t numberOptionalArguments=0) const
   {
     if (thisTypetagOriginal == 0 && thisTypetagTarget == 0)
       throw std::runtime_error("Smart not prepared!");
 
     auto ext = isStatic ? nullptr : extract;
-    return {ext, thisTypetagOriginal, thisTypetagTarget, isStatic};
+    return {ext, thisTypetagOriginal, thisTypetagTarget, isStatic, numberOptionalArguments};
   }
 
   template<typename ClassType, typename BaseClassType = void>
@@ -235,21 +235,21 @@ public:
 
   // overload
   template <typename Ret, typename... Args>
-  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...), sig_t<Ret, Args...>)
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...), sig_t<Ret, Args...> s)
   {
     detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
           return (self->*method)(args...);
-        }, _strategy.md());
+        }, _strategy.md(false, s.numberOptionalArguments));
     return *this;
   }
 
   // overload const
   template <typename Ret, typename... Args>
-  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const, sig_t<Ret, Args...>)
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const, sig_t<Ret, Args...> s)
   {
     detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
           return (self->*method)(args...);
-        }, _strategy.md());
+        }, _strategy.md(false, s.numberOptionalArguments));
     return *this;
   }
 
@@ -271,9 +271,9 @@ public:
 
   // overload static
   template <typename Ret, typename... Args>
-  SQBClass& bindStaticMethod(const std::string &name, Ret (*method)(Args...), sig_t<Ret, Args...>)
+  SQBClass& bindStaticMethod(const std::string &name, Ret (*method)(Args...), sig_t<Ret, Args...> s)
   {
-    detail::registerFunction(this, name, method, _strategy.md(true));
+    detail::registerFunction(this, name, method, _strategy.md(true, s.numberOptionalArguments));
     return *this;
   }
 
