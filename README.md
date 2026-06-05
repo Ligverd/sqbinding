@@ -96,6 +96,56 @@ c.start();
 
 The difference is minimal. This is exactly what was intended.
 
+
+**Real example of binding**
+
+```cpp
+sqb.bindClass<Chain>("Chain")
+    .bindConstructor()
+    .bindMethod("start", &Chain::start)
+    .bindMethod("stop", &Chain::stop)
+    .bindMethod("clean", &Chain::clean)
+    .bindMethod("reset", &Chain::reset)
+    .bindMethod("empty", &Chain::empty)
+    .bindMethod("getInformation", &Chain::getInformation)
+    .bindMethod("getSegmentsInformation", &Chain::getSegmentsInformation)
+    .bindMethod("getSvg", &Chain::getSvg, sqb::sig<std::string,int>(1))
+    .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,const char*>())
+    .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,MediaTypeMask>())
+    .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,Connector::Number>())
+    .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,std::shared_ptr<Component>>())
+    .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,Chain::Tag>())
+    .bindProp<std::string>("name", [](Chain *self) { return self->getName(); }, [](Chain *self, std::string name){ self->setName(name); })
+;
+
+
+sqb.bindClass<HttpServer>("HttpServer")
+    .bindConstructor<std::string,int>()
+    .bindConstructor<std::string,int,Dictionary>()
+    .bindConstructor<std::string>()
+    .bindConstructor<std::string,Dictionary>()
+    .bindMethod("start", &HttpServer::start)
+    .bindMethod("stop",  &HttpServer::stop)
+    .bindMethod("createResource", &HttpServer::createResource, sqb::sig<std::shared_ptr<HttpResource>, UriPattern>(1))
+    .bindMethod("removeResource", &HttpServer::removeResource)
+    .bindMethod("addMountPoint" , &HttpServer::addMountPoint)
+    .bindMethod("removeMountPoint", &HttpServer::removeMountPoint)
+    .bindMethod("addHandler", [&sqb](HttpServer *self, std::string uriPattern, sqb::SQBFunction func, std::string mime) {
+        Server::Handler handler(uriPattern, [&sqb, func, mime](Server::Request &req, Server::Response &res){
+            std::string content = func(req);
+            if (content.empty()) {
+                res.set_content("not found", 404, "text/plain");
+            }else{
+                res.set_content(content.c_str(), 200, mime.c_str());
+            }
+        }, "");
+        self->addHandler(handler);
+    })
+    .bindMethod("addRoute", &HttpServer::addRoute)
+;
+
+```
+
 # Features
 
 ## Minimal example
