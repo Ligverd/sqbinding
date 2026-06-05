@@ -225,7 +225,8 @@ No static_cast, no macros. Just sqb::sig<Ret, Args...>() to resolve the overload
 
 If there is only one function or method, but it contains optional arguments, just specify their number.
 
-```
+
+```cpp
 int test(int i, int a = 0) { return i + a; }
 
 sqb.bindFunction("test", test, sqb::sig<int,int,int>(1));
