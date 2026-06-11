@@ -359,21 +359,26 @@ struct ArgExtractor {
   }
 };
 
-// remove T& -> T
 template<typename T>
 struct ArgExtractor<T&> {
-  //static T& extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
-  static T extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
-    return *ArgExtractor<T*>::extract(vm, idx, ext);
+  static T& extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
+    T* ptr = types::pop<T*>(vm, idx);
+    if (!ptr)
+      throw std::runtime_error("Cannot extract reference: pointer is null for type " + types::name<T>());
+    return *ptr;
   }
 };
 
 template<typename T>
 struct ArgExtractor<const T&> {
-  static T extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
-    return *ArgExtractor<const T*>::extract(vm, idx, ext);
+  static const T& extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
+    const T* ptr = types::pop<const T*>(vm, idx);
+    if (!ptr)
+      throw std::runtime_error("Cannot extract const reference: pointer is null for type " + types::name<T>());
+    return *ptr;
   }
 };
+
 
 template<typename T>
 struct ArgExtractor<T*> {
@@ -417,14 +422,13 @@ struct ArgumentUnpacker<T, Rest...>
     SQInteger argIndex = argsCount - sizeof...(Rest);
     int argShift = ext ? 0 : 1;
 
-    typedef typename std::remove_reference<T>::type BaseType;
-    BaseType arg = detail::ArgExtractor<T>::extract(vm, argIndex + argShift, ext);
+    T arg = detail::ArgExtractor<T>::extract(vm, argIndex + argShift, ext);
 
     return ArgumentUnpacker<Rest...>::call(vm,
-      [&func, &arg](Rest... rest) -> decltype(func(arg, rest...)) {
-        return func(arg, rest...);
-      },
-      argsCount, ext);
+        [&func, &arg](Rest... rest) -> decltype(func(arg, rest...)) {
+          return func(arg, rest...);
+        },
+        argsCount, ext);
   }
 };
 

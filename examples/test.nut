@@ -14,16 +14,17 @@ Test.staticMethod(12)
 TestStatic.static_prop = 567
 
 
-local test = Test(44)
+test <- Test(44)
 test << 6
 opshiftl <- test.idx
 
-local test2 = Test("text")
+test2 <- Test("text")
 test2_single <- test2.single(42) // "idx: 55 name: text single(42)"
 
-local test3 = Test(test2)
+test3 <- Test(test2)
 test3_single <- test3.single(43) // "idx: 55 name: text single(43)"
 
+test4_isRef <- test.isRef(test2, test2)
 
 c | " Ligverd"
 opor <- c.name
