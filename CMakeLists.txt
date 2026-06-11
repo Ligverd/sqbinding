@@ -15,10 +15,8 @@ if(USE_INTERNAL_SQUIRREL)
     FetchContent_Declare(
         squirrel
         GIT_REPOSITORY https://github.com/Ligverd/squirrel.git
-        #GIT_TAG master
-        GIT_TAG b29d442bfa74ff270c5749007c068c28485e8708
+        GIT_TAG 638cee6cd93b09a6f7a92bef8a000f9bc14c05ca
         GIT_SHALLOW TRUE
-        #PATCH_COMMAND git apply ${CMAKE_CURRENT_SOURCE_DIR}/patch/03_add_gdb3.patch
     )
 
     set(SQ_DISABLE_INTERPRETER ON CACHE BOOL "" FORCE)
