@@ -38,7 +38,7 @@ struct Test {
   //~Test() { std::cout << "~Test" << std::endl; }
 
   std::string single(int i) {
-    return "idx: "+ std::to_string(idx) +" name: " + name +"  single(" + std::to_string(i) + ")";
+    return "idx: "+ std::to_string(idx) +" name: " + name +" single(" + std::to_string(i) + ")";
   }
 
   std::string multi(int i) {
@@ -193,6 +193,7 @@ int main(int argc, char **argv)
         .bindConstructor<int>()
         .bindConstructor<std::string, int>()
         .bindConstructor([](std::string s) { return new Test(s, 55); })
+        .bindConstructor([](Test t) { return new Test(t.name, t.idx); })
         .bindMethod("single", &Test::single)
         .bindMethod("lambda", [](Test *self, int i, std::string s) { return self->multi(i,s); } )
         .bindMethod("multi", &Test::multi, sqb::sig<std::string,int>())
@@ -246,6 +247,8 @@ int main(int argc, char **argv)
     check.test("bind operator|", sqb.getValue<std::string>("opor") == "Hello Ligverd" && sqb.getValue<std::string>("oporor") == "Hello Ligverd and Lana");
     check.test("check cross var", sqb.executeString("crossValue <- 555")==0 && sqb.getValue<int>("crossValue") == 555);
     check.test("check object shared_ptr", sqb.getValue<int>("idx_TestP") == 345);
+    check.test("construct lambda 1", sqb.getValue<std::string>("test2_single") == "idx: 55 name: text single(42)");
+    check.test("construct lambda 2", sqb.getValue<std::string>("test3_single") == "idx: 55 name: text single(43)");
     check.test("check arg shared_ptr", sqb.getValue<int>("arg_shared_ptr") == 345);
 
     // Array

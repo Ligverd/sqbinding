@@ -209,6 +209,7 @@ public:
     return *this;
   }
 
+
   template <typename Func>
   SQBClass& bindConstructor(const Func lambda) {
     auto func = detail::make_function(lambda);

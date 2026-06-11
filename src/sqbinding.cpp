@@ -50,6 +50,9 @@ SQBinding::SQBinding(HSQUIRRELVM vm)
   types::Type::create<long>(OT_INTEGER);
   types::Type::create<float>(OT_FLOAT);
   types::Type::create<double>(OT_FLOAT);
+
+  // for popValue OT_STRING -> std::string or const char*
+  types::Type::create<std::string, const char*>(OT_STRING);
 }
 
 SQBinding::~SQBinding()

@@ -422,6 +422,23 @@ inline std::string popValue(HSQUIRRELVM vm, SQInteger idx) {
 #endif
 
 
+template<>
+inline const char* popValue(HSQUIRRELVM vm, SQInteger idx) {
+  SQObjectType objType = sq_gettype(vm, idx);
+
+  switch (objType) {
+  case OT_STRING:
+    const SQChar* ch;
+    if (SQ_FAILED(sq_getstring(vm, idx, &ch)))
+      throw std::runtime_error("Could not get string from squirrel stack");
+    return (ch==nullptr)?"":ch;
+  case OT_NULL:
+    return NULL;
+  default:
+    return NULL;
+  }
+}
+
 
 /////////////////////////////
 /// interfcae pop

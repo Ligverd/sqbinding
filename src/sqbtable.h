@@ -178,9 +178,12 @@ public:
 
   // for overloaded functions
   template <typename Ret, typename... Args>
-  SQBTable& bindFunction(const std::string &name, Ret(*func)(Args...), sig_t<Ret, Args...>)
+  SQBTable& bindFunction(const std::string &name, Ret(*func)(Args...), sig_t<Ret, Args...> s)
   {
-    detail::registerFunction(this, name, func);
+    detail::MethodDescriptor md; // default
+    md.numberOptionalArguments = s.numberOptionalArguments;
+
+    detail::registerFunction(this, name, func, md);
     return *this;
   }
 
