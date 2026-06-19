@@ -379,6 +379,14 @@ struct ArgExtractor<const T&> {
   }
 };
 
+// it is impossible to convert just like that const char* -> const std::string&
+template<>
+struct ArgExtractor<const std::string&> {
+  static std::string extract(HSQUIRRELVM vm, int idx, ExtractFunc ext) {
+    std::string s = types::popValue<std::string>(vm, idx);
+    return s;
+  }
+};
 
 template<typename T>
 struct ArgExtractor<T*> {

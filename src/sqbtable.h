@@ -143,8 +143,6 @@ public:
     return ar;
   }
 
-
-
   template<typename PropType>
   SQBTable& bindValue(const std::string &name, PropType *prop, bool readOnly = false) {
     if (_getterMap == nullptr || _setterMap == nullptr) {
@@ -165,6 +163,31 @@ public:
       }
       return 0;
     };
+
+    return *this;
+  }
+
+  template<typename PropType>
+  SQBTable& bindValue(const std::string &name, std::function<PropType()> getter, std::function<void(PropType)> setter = nullptr) {
+    if (_getterMap == nullptr || _setterMap == nullptr) {
+      error(vm, "setter/getter not init TODO detail::initPropHook");
+      return *this;
+    }
+
+    if (getter) {
+      (*_getterMap)[name] = [getter](HSQUIRRELVM vm) {
+        types::pushValue<PropType>(vm, getter());
+        return 1;
+      };
+    }
+
+    if (setter) {
+      (*_setterMap)[name] = [setter](HSQUIRRELVM vm) {
+        PropType v = types::popValue<PropType>(vm, -2);
+        setter(v);
+        return 0;
+      };
+    }
 
     return *this;
   }

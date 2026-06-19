@@ -379,7 +379,7 @@ inline bool popValue<bool>(HSQUIRRELVM vm, SQInteger idx) {
   return static_cast<bool>(val);
 }
 
-
+/*
 #ifdef SQUNICODE
 template<>
 inline std::wstring popValue(HSQUIRRELVM vm, SQInteger index){
@@ -397,6 +397,8 @@ inline std::wstring popValue(HSQUIRRELVM vm, SQInteger index){
   return std::wstring(val,len);
 }
 #else
+#endif
+*/
 template<>
 inline std::string popValue(HSQUIRRELVM vm, SQInteger idx) {
   SQObjectType objType = sq_gettype(vm, idx);
@@ -419,8 +421,6 @@ inline std::string popValue(HSQUIRRELVM vm, SQInteger idx) {
     return "";
   }
 }
-#endif
-
 
 template<>
 inline const char* popValue(HSQUIRRELVM vm, SQInteger idx) {
