@@ -24,7 +24,7 @@ The problem was that, once again, ready-made bindings did not provide what was n
 - Can wrap an already running VM: `sqb::SQBinding sqb(raw_vm);`
 - Bind free functions, lambdas, and methods
 - Overloaded functions, methods, and static methods via `sqb::sig<Ret, Args...>()`
-- Optional arguments via `sqb::sig<Ret, Args...>(NumberOptionalArguments)`
+- Optional arguments via `sqb::sig<Ret, Args...>(NumberOptionalArguments)` or `{NumberOptionalArguments}`
 - Fluent interface for class binding: `.bindConstructor().bindMethod().bindProp()`
 - Native any smart pointer support via `sqb::Smart<T>()`
 - Inheritance — base class methods available in derived classes, `instanceof` works
@@ -109,7 +109,7 @@ sqb.bindClass<Chain>("Chain")
     .bindMethod("empty", &Chain::empty)
     .bindMethod("getInformation", &Chain::getInformation)
     .bindMethod("getSegmentsInformation", &Chain::getSegmentsInformation)
-    .bindMethod("getSvg", &Chain::getSvg, sqb::sig<std::string,int>(1))
+    .bindMethod("getSvg", &Chain::getSvg, {1})
     .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,const char*>())
     .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,MediaTypeMask>())
     .bindMethod("_shiftl", &Chain::operator<<, sqb::sig<Chain&,Connector::Number>())
@@ -126,7 +126,7 @@ sqb.bindClass<HttpServer>("HttpServer")
     .bindConstructor<std::string,Dictionary>()
     .bindMethod("start", &HttpServer::start)
     .bindMethod("stop",  &HttpServer::stop)
-    .bindMethod("createResource", &HttpServer::createResource, sqb::sig<std::shared_ptr<HttpResource>, const UriPattern&, const std::string&>(1))
+    .bindMethod("createResource", &HttpServer::createResource, {1})
     .bindMethod("removeResource", &HttpServer::removeResource)
     .bindMethod("addMountPoint" , &HttpServer::addMountPoint)
     .bindMethod("removeMountPoint", &HttpServer::removeMountPoint)
@@ -281,6 +281,15 @@ int test(int i, int a = 0) { return i + a; }
 
 sqb.bindFunction("test", test, sqb::sig<int,int,int>(1));
 ```
+
+or compact version if not use overload
+
+```cpp
+int test(int i, int a = 0) { return i + a; }
+
+sqb.bindFunction("test", test, {1});
+```
+
 
 
 The reverse — calling a Squirrel function from C++.

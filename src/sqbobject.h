@@ -16,7 +16,11 @@ namespace sqb {
 
 // clarifying the signature for overloaded methods and functions + optional arguments
 template <typename Ret, typename... Args>
-struct sig_t {int numberOptionalArguments = 0;};
+struct sig_t {
+  int numberOptionalArguments; // = 0;
+  sig_t(int numberOptionalArguments = 0) : numberOptionalArguments(numberOptionalArguments) {}
+};
+
 template <typename Ret, typename... Args>
 sig_t<Ret, Args...> sig(int numberOptionalArguments = 0) {
   auto s = sig_t<Ret, Args...>();
