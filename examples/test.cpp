@@ -143,6 +143,12 @@ inline void pushValue<CustomType>(HSQUIRRELVM vm, const CustomType& val) {
 }}
 
 
+
+std::string roundTripModify(sqb::SQBFunction sqFunc, Test& obj) {
+  sqFunc(obj); // push<T&> -> push<T*>
+  return obj.name + "_" + std::to_string(obj.idx);
+}
+
 /////////////////////////////////////////////////////////////
 void printfunc(HSQUIRRELVM v, const SQChar *s,...)
 {
@@ -302,6 +308,14 @@ int main(int argc, char **argv)
     //func(ct);
 
     check.test("custom type and call", ct2.name=="Hello world" && ct2.number==43 && ct2.ar == std::vector<int>({1,2,3,9}));
+
+
+    sqb.bindFunction("roundTripModify", &roundTripModify);
+    //
+    Test refTestObj("original_name", 111);
+    auto sqModifyFunc = sqb.getFunction("modifyTestInSQ");
+    std::string roundTripResult = roundTripModify(sqModifyFunc, refTestObj);
+    check.test("pass by ref to SQ modifies original C++ object (no copy)", roundTripResult == "sq_modified_111" && refTestObj.name == "sq_modified");
 
   }
 

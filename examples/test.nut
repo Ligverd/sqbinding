@@ -44,3 +44,8 @@ p <- TestP(345)
 idx_TestP <- p.idx
 
 arg_shared_ptr <- testArgPtr(p)
+
+
+function modifyTestInSQ(t) {
+  t.name = "sq_modified"
+}
