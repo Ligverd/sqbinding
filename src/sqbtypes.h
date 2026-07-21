@@ -474,38 +474,34 @@ pop(HSQUIRRELVM vm, SQInteger idx)
 template <typename T, typename std::enable_if<std::is_pointer<T>::value, int>::type = 0>
 inline void pushValue(HSQUIRRELVM vm, const T& val) {
   using NakedT = typename std::remove_pointer<T>::type;
-  const size_t typeHash = typeid(NakedT).hash_code();
-  const Type &t = Type::get(typeHash);
+  const size_t ptrHash = typeid(T).hash_code();
+  const size_t nakedHash = typeid(NakedT).hash_code();
 
-  if (t.type == OT_INSTANCE) {
-    int top = sq_gettop(vm);
-    for (int idx = 1; idx <= top; idx++) {
-      SQUserPointer existingPtr;
-      if (SQ_SUCCEEDED(sq_getinstanceup(vm, idx, &existingPtr, reinterpret_cast<SQUserPointer>(typeHash), SQFalse))) {
-        if (existingPtr == val) {
-          sq_push(vm, idx);
-          return;
-        }
+  int top = sq_gettop(vm);
+  for (int idx = 1; idx <= top; idx++) {
+    SQUserPointer existingPtr;
+    if (SQ_SUCCEEDED(sq_getinstanceup(vm, idx, &existingPtr, nullptr, SQFalse))) {
+      if (existingPtr == val && sq_gettype(vm, idx) == Type::get(ptrHash).type) {
+        sq_push(vm, idx);
+        return;
       }
     }
+  }
 
-    HSQOBJECT classObj;
-    if (!findClassByTypetag(vm, reinterpret_cast<SQUserPointer>(typeHash), &classObj)) {
-      throw std::runtime_error("Class not registered in Squirrel");
-    }
-
+  HSQOBJECT classObj;
+  if (findClassByTypetag(vm, reinterpret_cast<SQUserPointer>(nakedHash), &classObj)) {
     sq_pushobject(vm, classObj);
     sq_createinstance(vm, -1);
-    sq_remove(vm, -2); // classObj уходит, инстанс на вершине
+    sq_remove(vm, -2);
 
     sq_setinstanceup(vm, -1, const_cast<NakedT*>(val));
-    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(typeHash));
-  } else {
-    sq_pushuserpointer(vm, reinterpret_cast<SQUserPointer>(val));
-    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(typeHash));
+    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(nakedHash));
+    return;
   }
-}
 
+  sq_pushuserpointer(vm, reinterpret_cast<SQUserPointer>(val));
+  sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(ptrHash));
+}
 
 
 
@@ -624,22 +620,24 @@ inline push(HSQUIRRELVM vm, const T& val)
 template <typename T>
 typename std::enable_if<!std::is_pointer<T>::value && !std::is_const<T>::value, void>::type
 inline push(HSQUIRRELVM vm, T& val) {
-  const size_t typeHash = typeid(T).hash_code();
+  using NakedT = typename std::remove_cv<
+  typename std::remove_reference<
+  typename std::remove_pointer<T>::type
+  >::type
+  >::type;
+
+  const size_t typeHash = typeid(NakedT).hash_code();
   const Type &t = Type::get(typeHash);
 
-  if (t.type == OT_INSTANCE)
-    push(vm, &val);
-  else
-    push(vm, static_cast<const T&>(val));
+  if (t.type == OT_INSTANCE) {
+    pushValue<NakedT*>(vm, &val);
+  } else {
+    pushValue<NakedT>(vm, val);
+  }
 }
 
-/*
-template <typename T>
-typename std::enable_if<!std::is_pointer<T>::value && !std::is_const<T>::value, void>::type
-    inline push(HSQUIRRELVM vm, T& val) {
-  push(vm, &val); // Recursion for T*
-}
-*/
+
+
 
 // multiple args base
 template<typename... Args>

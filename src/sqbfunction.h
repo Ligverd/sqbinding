@@ -66,22 +66,6 @@ public:
       throw std::runtime_error("HSQOBJECT not OT_CLOSURE");
   }
 
-  /*
-  template<typename... Args>
-  CallResult operator()(const Args&... args) const {
-    int top = push();
-    _call(args...);
-    return CallResult(vm, top);
-  }
-
-  template<typename... Args>
-  CallResult operator()(Args&... args) const {
-    int top = push();
-    _call(args...);
-    return CallResult(vm, top);
-  }
-  */
-
   template<typename... Args>
   CallResult operator()(Args&&... args) const {
     int top = push();
