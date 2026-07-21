@@ -66,6 +66,7 @@ public:
       throw std::runtime_error("HSQOBJECT not OT_CLOSURE");
   }
 
+  /*
   template<typename... Args>
   CallResult operator()(const Args&... args) const {
     int top = push();
@@ -73,10 +74,25 @@ public:
     return CallResult(vm, top);
   }
 
+  template<typename... Args>
+  CallResult operator()(Args&... args) const {
+    int top = push();
+    _call(args...);
+    return CallResult(vm, top);
+  }
+  */
+
+  template<typename... Args>
+  CallResult operator()(Args&&... args) const {
+    int top = push();
+    _call(std::forward<Args>(args)...);
+    return CallResult(vm, top);
+  }
+
 private:
 
   template<typename... Args>
-  void _call(Args... args) const
+  void _call(Args&&... args) const
   {
     // push first argument parent table or instance or root table
     if (parentObject)
@@ -85,7 +101,7 @@ private:
       sq_pushroottable(vm);
 
     // push another arguments
-    types::pushArgs(vm, args...);
+    types::pushArgs(vm, std::forward<Args>(args)...);
 
     if (SQ_FAILED(sq_call(vm, sizeof...(Args)+1, SQTrue, SQTrue))) {
       throw std::runtime_error("Squirrel call failed");
