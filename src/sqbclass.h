@@ -308,7 +308,7 @@ public:
       if (readOnly) {
         error(vm, "property '%s' read only!", name);
       }else{
-        SQUserPointer up = types::popValuePointer(vm, -3);
+        SQUserPointer up = types::popValuePointer(vm, -4);
         ClassType *c = static_cast<ClassType*>( sb.extract(up) );
         c->*prop = types::popValue<PropType>(vm, -2);
       }
