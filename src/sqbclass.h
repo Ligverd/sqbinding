@@ -245,7 +245,7 @@ public:
   template <typename Ret, typename... Args>
   SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const)
   {
-    detail::registerFunction(this, name, [method](const ClassType *self, Args... args) -> Ret {
+    detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
       return (self->*method)(args...);
     }, _strategy.md());
     return *this;
@@ -273,7 +273,7 @@ public:
   template <typename Ret, typename... Args>
   SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const, sig_t<Ret, Args...> s)
   {
-    detail::registerFunction(this, name, [method](const ClassType *self, Args... args) -> Ret {
+    detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
           return (self->*method)(args...);
         }, _strategy.md(false, s.numberOptionalArguments));
     return *this;
