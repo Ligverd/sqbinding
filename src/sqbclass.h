@@ -209,6 +209,19 @@ public:
     return *this;
   }
 
+  template <typename... Args>
+  SQBClass& bindConstructor(sig_t<void, Args...> s) {
+    HSQUIRRELVM v = vm;
+    SmartBase sb = _strategy;
+
+    detail::registerFunction(this, "constructor", [v, sb](Args... args) -> void {
+      auto obj = sb.pack( new ClassType(args...) );
+      sq_setinstanceup(v, 1, obj );
+      sq_setreleasehook(v, 1, sb.releaseHook);
+      sq_pop(v, 2);
+    }, _strategy.md(false, s.numberOptionalArguments));
+    return *this;
+  }
 
   template <typename Func>
   SQBClass& bindConstructor(const Func lambda) {
@@ -218,6 +231,7 @@ public:
   }
 
 
+  // non const
   template <typename Ret, typename... Args>
   SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...))
   {
@@ -226,6 +240,17 @@ public:
     }, _strategy.md());
     return *this;
   }
+
+  // const
+  template <typename Ret, typename... Args>
+  SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const)
+  {
+    detail::registerFunction(this, name, [method](const ClassType *self, Args... args) -> Ret {
+      return (self->*method)(args...);
+    }, _strategy.md());
+    return *this;
+  }
+
 
   template <typename Func>
   SQBClass& bindMethod(const std::string &name, Func func)
@@ -248,12 +273,11 @@ public:
   template <typename Ret, typename... Args>
   SQBClass& bindMethod(const std::string &name, Ret (ClassType::*method)(Args...) const, sig_t<Ret, Args...> s)
   {
-    detail::registerFunction(this, name, [method](ClassType *self, Args... args) -> Ret {
+    detail::registerFunction(this, name, [method](const ClassType *self, Args... args) -> Ret {
           return (self->*method)(args...);
         }, _strategy.md(false, s.numberOptionalArguments));
     return *this;
   }
-
 
   template <typename Ret, typename... Args>
   SQBClass& bindStaticMethod(const std::string &name, Ret (ClassType::*method)(Args...))
